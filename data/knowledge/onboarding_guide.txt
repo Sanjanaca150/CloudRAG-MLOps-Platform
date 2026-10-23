@@ -1,0 +1,5 @@
+Employee Onboarding Guide
+
+New employees should complete identity and payroll forms during their first week. The IT team provides a company account and approved equipment after the manager submits an access request. Employees must enable multi-factor authentication and never share passwords or verification codes. Mandatory security awareness training should be completed within the first ten working days.
+
+Questions about benefits, payroll, or employment terms should be directed to Human Resources. Access to internal systems is based on job responsibilities and must be approved by the relevant manager. This sample guide is illustrative and does not describe any real company's procedures.

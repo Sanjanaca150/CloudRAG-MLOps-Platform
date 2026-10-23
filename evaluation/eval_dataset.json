@@ -1,0 +1,44 @@
+[
+  {
+    "id": "leave_annual_days",
+    "question": "How many annual paid leave days do full-time employees receive?",
+    "expected_answer": "Full-time employees receive 18 days of annual paid leave per calendar year.",
+    "expected_source": "company_leave_policy.txt",
+    "required_keywords": ["18 days", "annual paid leave"]
+  },
+  {
+    "id": "leave_request_notice",
+    "question": "How far in advance should leave requests normally be submitted?",
+    "expected_answer": "Leave requests should be submitted at least five working days before planned leave, except in emergencies.",
+    "expected_source": "company_leave_policy.txt",
+    "required_keywords": ["five working days", "leave requests"]
+  },
+  {
+    "id": "onboarding_forms",
+    "question": "When should new employees complete identity and payroll forms?",
+    "expected_answer": "New employees should complete identity and payroll forms during their first week.",
+    "expected_source": "onboarding_guide.txt",
+    "required_keywords": ["first week", "payroll forms"]
+  },
+  {
+    "id": "security_mfa",
+    "question": "What security measure must employees enable for work accounts?",
+    "expected_answer": "Employees must enable multi-factor authentication and use unique passwords.",
+    "expected_source": "security_basics.txt",
+    "required_keywords": ["multi-factor authentication"]
+  },
+  {
+    "id": "security_public_ai",
+    "question": "Can confidential documents be uploaded to public AI services without authorization?",
+    "expected_answer": "No. Confidential documents should not be uploaded to public AI services without authorization.",
+    "expected_source": "security_basics.txt",
+    "required_keywords": ["not upload", "without authorization"]
+  },
+  {
+    "id": "security_secrets",
+    "question": "How should application secrets be handled in production?",
+    "expected_answer": "Use a managed secrets service in production.",
+    "expected_source": "security_basics.txt",
+    "required_keywords": ["managed secrets service"]
+  }
+]

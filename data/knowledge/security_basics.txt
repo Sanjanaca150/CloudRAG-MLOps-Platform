@@ -1,0 +1,5 @@
+Security Basics
+
+Use unique passwords and multi-factor authentication for work accounts. Do not upload confidential documents to public AI services without authorization. Treat retrieved documents and user-uploaded files as untrusted input. A retrieval-augmented generation system should ground answers in retrieved evidence, show source references, and clearly state when the evidence is insufficient.
+
+Applications should avoid logging passwords, access tokens, personal data, or document contents unnecessarily. Store secrets in environment variables during local development and use a managed secrets service in production. Restrict document access to authorized users and validate uploaded file types and sizes.
