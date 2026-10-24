@@ -1,0 +1,12 @@
+
+.venv/
+__pycache__/
+.pytest_cache/
+.git/
+.env
+mlflow.db
+mlflow.db-*
+mlruns/
+reports/
+data/chroma/
+*.pyc
