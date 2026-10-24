@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudRAG | AI Knowledge Assistant</title>
+    <style>
+        :root {
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            color: #172033;
+            background: #f4f7fb;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 22px 6%;
+        }
+
+        header h1 { margin: 0 0 6px; font-size: 25px; }
+        header p { margin: 0; color: #dbeafe; font-size: 14px; }
+
+        main {
+            max-width: 900px;
+            margin: 28px auto;
+            padding: 0 18px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 18px;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .status {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .status strong { color: #0f766e; }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: 0.55; cursor: wait; }
+
+        .primary { background: #2563eb; color: white; }
+        .secondary { background: #e2e8f0; color: #172033; }
+
+        #messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 180px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding: 8px 2px;
+        }
+
+        .message {
+            padding: 14px 16px;
+            border-radius: 12px;
+            max-width: 92%;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #dbeafe;
+        }
+
+        .assistant {
+            align-self: flex-start;
+            background: #f1f5f9;
+        }
+
+        .error {
+            align-self: flex-start;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .citations {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #cbd5e1;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .citations ul { padding-left: 20px; margin-bottom: 0; }
+        .citations li { margin: 5px 0; }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            display: block;
+            width: 100%;
+            min-height: 95px;
+            resize: vertical;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            padding: 12px;
+            font: inherit;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #2563eb;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .hint {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 12px 18px 28px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            header { padding: 20px; }
+            main { margin-top: 18px; }
+            .panel { padding: 15px; }
+            .message { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CloudRAG</h1>
+        <p>AI Knowledge Assistant · Retrieval-Augmented Generation · MLOps</p>
+    </header>
+
+    <main>
+        <section class="panel">
+            <div class="status-row">
+                <div>
+                    <strong>System status</strong>
+                    <div id="status" class="status" aria-live="polite">
+                        Checking API status...
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="refreshButton" class="secondary" type="button">
+                        Refresh status
+                    </button>
+                    <button id="ingestButton" class="primary" type="button">
+                        Index documents
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Ask your knowledge base</h2>
+            <div id="messages" aria-live="polite">
+                <div class="message assistant">
+                    Hello! Ask a question about the documents indexed in your
+                    CloudRAG knowledge base. Answers include retrieved source citations.
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <form id="questionForm">
+                <label for="question">Your question</label>
+                <textarea
+                    id="question"
+                    minlength="3"
+                    maxlength="1000"
+                    placeholder="For example: How many annual leave days are allowed?"
+                    required
+                ></textarea>
+
+                <div class="actions">
+                    <button id="askButton" class="primary" type="submit">
+                        Ask question
+                    </button>
+                    <button id="clearButton" class="secondary" type="button">
+                        Clear chat
+                    </button>
+                </div>
+
+                <p class="hint">
+                    This local prototype sends questions to your FastAPI backend.
+                    Answers can be incorrect; verify important information against
+                    the cited source documents.
+                </p>
+            </form>
+        </section>
+    </main>
+
+    <footer>CloudRAG MLOps Platform · Local development interface</footer>
+
+    <script>
+        const statusElement = document.getElementById("status");
+        const messagesElement = document.getElementById("messages");
+        const questionInput = document.getElementById("question");
+        const askButton = document.getElementById("askButton");
+        const ingestButton = document.getElementById("ingestButton");
+
+        function addMessage(text, type = "assistant", citations = []) {
+            const message = document.createElement("div");
+            message.className = `message ${type}`;
+
+            const content = document.createElement("div");
+            content.textContent = text;
+            message.appendChild(content);
+
+            if (citations.length > 0) {
+                const section = document.createElement("div");
+                section.className = "citations";
+
+                const heading = document.createElement("strong");
+                heading.textContent = "Retrieved sources";
+                section.appendChild(heading);
+
+                const list = document.createElement("ul");
+
+                citations.forEach((citation) => {
+                    const item = document.createElement("li");
+                    item.textContent =
+                        `${citation.source} · Chunk ${citation.chunk_index}` +
+                        ` · Distance: ${citation.distance}`;
+                    list.appendChild(item);
+                });
+
+                section.appendChild(list);
+                message.appendChild(section);
+            }
+
+            messagesElement.appendChild(message);
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+
+        async function readError(response) {
+            try {
+                const data = await response.json();
+                return data.detail || `Request failed (${response.status}).`;
+            } catch {
+                return `Request failed (${response.status}).`;
+            }
+        }
+
+        async function refreshStatus() {
+            statusElement.textContent = "Checking...";
+            try {
+                const response = await fetch("/health");
+                if (!response.ok) {
+                    throw new Error(await readError(response));
+                }
+
+                const data = await response.json();
+                statusElement.textContent =
+                    `API online · ${data.indexed_chunks} indexed chunks`;
+            } catch (error) {
+                statusElement.textContent =
+                    `API unavailable · ${error.message}`;
+            }
+        }
+
+        document.getElementById("refreshButton").addEventListener(
+            "click",
+            refreshStatus
+        );
+
+        document.getElementById("ingestButton").addEventListener(
+            "click",
+            async () => {
+                ingestButton.disabled = true;
+                ingestButton.textContent = "Indexing...";
+
+                try {
+                    const response = await fetch("/ingest", {
+                        method: "POST"
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(await readError(response));
+                    }
+
+                    const data = await response.json();
+                    addMessage(
+                        `Document indexing completed. Documents: ${data.documents}. ` +
+                        `Chunks indexed: ${data.chunks}.`,
+                        "assistant"
+                    );
+                    await refreshStatus();
+                } catch (error) {
+                    addMessage(`Indexing failed: ${error.message}`, "error");
+                } finally {
+                    ingestButton.disabled = false;
+                    ingestButton.textContent = "Index documents";
+                }
+            }
+        );
+
+        document.getElementById("questionForm").addEventListener(
+            "submit",
+            async (event) => {
+                event.preventDefault();
+
+                const question = questionInput.value.trim();
+                if (question.length < 3) {
+                    addMessage("Please enter a question with at least 3 characters.", "error");
+                    return;
+                }
+
+                addMessage(question, "user");
+                questionInput.value = "";
+                askButton.disabled = true;
+                askButton.textContent = "Thinking...";
+
+                try {
+                    const response = await fetch("/ask", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            question: question,
+                            top_k: 4
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(await readError(response));
+                    }
+
+                    const data = await response.json();
+                    addMessage(
+                        data.answer,
+                        "assistant",
+                        data.citations || []
+                    );
+                } catch (error) {
+                    addMessage(
+                        `Could not get an answer: ${error.message}`,
+                        "error"
+                    );
+                } finally {
+                    askButton.disabled = false;
+                    askButton.textContent = "Ask question";
+                    questionInput.focus();
+                }
+            }
+        );
+
+        document.getElementById("clearButton").addEventListener(
+            "click",
+            () => {
+                messagesElement.replaceChildren();
+                addMessage("Chat cleared. Ask a new question whenever you're ready.");
+            }
+        );
+
+        refreshStatus();
+    </script>
+</body>
+</html>
