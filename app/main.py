@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.chunking import split_text
 from app.config import CHUNK_OVERLAP, CHUNK_SIZE, DATA_DIR, TOP_K
@@ -16,7 +16,7 @@ app = FastAPI(
         "Local-first RAG API with Ollama embeddings, "
         "ChromaDB retrieval, source citations, and a browser chat interface."
     ),
-    version="0.2.0",
+    version="0.2.1",
 )
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -26,6 +26,19 @@ CHAT_PAGE = STATIC_DIR / "index.html"
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
     top_k: int = Field(default=TOP_K, ge=1, le=8)
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: str) -> str:
+        value = value.strip()
+
+        if len(value) < 3:
+            raise ValueError("Question must contain at least 3 non-space characters.")
+
+        if not value:
+            raise ValueError("Question cannot be blank.")
+
+        return value
 
 
 class SourceCitation(BaseModel):
@@ -42,11 +55,11 @@ class AskResponse(BaseModel):
 
 @app.get("/", include_in_schema=False)
 def chat_page():
-    """Serve the browser-based chat interface."""
+    """Serve the browser chat interface."""
     if not CHAT_PAGE.is_file():
         raise HTTPException(
             status_code=500,
-            detail="Chat interface file is missing: app/static/index.html",
+            detail="Chat interface is unavailable.",
         )
 
     return FileResponse(CHAT_PAGE, media_type="text/html")
@@ -62,13 +75,14 @@ def health():
 
 @app.post("/ingest")
 def ingest():
-    if not DATA_DIR.exists():
+    if not DATA_DIR.is_dir():
         raise HTTPException(
             status_code=500,
-            detail=f"Knowledge directory does not exist: {DATA_DIR}",
+            detail="Knowledge directory is unavailable.",
         )
 
     files = sorted(DATA_DIR.glob("*.txt"))
+
     if not files:
         raise HTTPException(
             status_code=400,
@@ -80,10 +94,10 @@ def ingest():
     for path in files:
         try:
             content = path.read_text(encoding="utf-8")
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             raise HTTPException(
                 status_code=500,
-                detail=f"Could not read {path.name}",
+                detail=f"Could not read knowledge document: {path.name}",
             ) from exc
 
         for index, chunk in enumerate(
@@ -101,7 +115,10 @@ def ingest():
     try:
         count = index_chunks(chunks)
     except OllamaError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
 
     return {
         "status": "indexed",
@@ -138,7 +155,10 @@ def ask(request: AskRequest):
         answer = generate_answer(request.question, context)
 
     except OllamaError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
 
     citations = [
         SourceCitation(
